@@ -1,0 +1,124 @@
+- step:
+    name: train
+    image: ammaryasirnaich/mmdetection3d
+    environment: aws-eu-west-1-g4dn-xlarge
+    command:
+    - python setup.py develop
+    - pip install --upgrade setuptools
+    - pip install --upgrade nbclassic jupyter-server notebook-shim anyio jupyter-events jupyter-server-terminals overrides websocket-client jinja2 jupyter-client jupyter-core nbformat packaging pyzmq send2trash tornado traitlets
+    - pip install jinja2==3.1.2 jupyter-client==7.4.4 packaging>=22.0 pyzmq>=24 tornado>=6.2.0
+    - pip install mmcv==2.0.0 mmengine
+    - python ./tools/train.py {parameters}
+    parameters:
+      - name: config
+        default: ./configs/mvxnet/mvxnet_fpn_dv_second_secfpn_8xb2-80e_kitti-3d-3class.py
+        optional: false
+        type: string
+      - name: work_dir
+        default: /valohai/outputs/
+        optional: true
+        type: string
+      - name: amp
+        default: false
+        pass-false-as: --amp=false
+        pass-true-as: --amp=true
+        type: flag
+      - name: sync_bn
+        default: none
+        optional: true
+        type: string
+        choices:
+          - none
+          - torch
+          - mmcv
+      - name: auto_scale_lr
+        default: false
+        pass-false-as: --auto-scale-lr=false
+        pass-true-as: --auto-scale-lr=true
+        type: flag
+      - name: resume
+        default: auto
+        optional: true
+        type: string
+      - name: ceph
+        default: false
+        pass-false-as: --ceph=false
+        pass-true-as: --ceph=true
+        type: flag
+      - name: cfg_options
+        default: None
+        optional: true
+        type: string
+      - name: launcher
+        default: none
+        optional: true
+        type: string
+        choices:
+          - none
+          - pytorch
+          - slurm
+          - mpi
+      - name: local_rank
+        default: 0
+        optional: true
+        type: integer
+
+- step:
+    name: demo
+    image: sofiiavalohai/mmdetection3d:v1
+    environment: aws-eu-west-1-g4dn-xlarge
+    command:
+      - pip install mmdet3d
+      - python demo/pcd_demo.py {parameters}
+    parameters:
+      - name: pcd
+        default: demo/data/kitti/kitti_000008.bin
+        optional: false
+        type: string
+      - name: model
+        default: configs/second/hv_second_secfpn_6x8_80e_kitti-3d-car.py
+        optional: false
+        type: string
+      - name: weights
+        default: /valohai/inputs/checkpoint/hv_second_secfpn_6x8_80e_kitti-3d-car_20200620_230238-393f000c.pth
+        optional: false
+        type: string
+      - name: device
+        default: cuda:0
+        optional: true
+        type: string
+      - name: pred_score_thr
+        default: 0.3
+        optional: true
+        type: float
+      - name: out_dir
+        default: outputs
+        optional: true
+        type: string
+      - name: show
+        default: false
+        pass-false-as: --show=false
+        pass-true-as: --show=true
+        type: flag
+      - name: wait_time
+        default: -1
+        optional: true
+        type: float
+      - name: no_save_vis
+        default: false
+        pass-false-as: --no-save-vis=false
+        pass-true-as: --no-save-vis=true
+        type: flag
+      - name: no_save_pred
+        default: false
+        pass-false-as: --no-save-pred=false
+        pass-true-as: --no-save-pred=true
+        type: flag
+      - name: print_result
+        default: false
+        pass-false-as: --print-result=false
+        pass-true-as: --print-result=true
+        type: flag
+    inputs:
+      - name: checkpoint
+        default: s3://dd-sample-bucket/mmdetection3d/hv_second_secfpn_6x8_80e_kitti-3d-car_20200620_230238-393f000c.pth
